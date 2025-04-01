@@ -310,6 +310,18 @@ The server provides dual implementation for storage components:
 - **In-memory storage**: Used in development
 - **Redis storage**: Used in production when REDIS_URL is provided
 
+## Testing with MCP Inspector
+
+You can use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to test your server:
+
+```bash
+# Install the MCP Inspector
+npm install -g @modelcontextprotocol/inspector
+
+# Start the inspector
+mcp-inspector --server-url http://localhost:3000
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
