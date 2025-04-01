@@ -6,6 +6,28 @@ A Model Context Protocol (MCP) server that allows users to connect to PostgreSQL
 
 This MCP server allows external applications to share database credentials with the server via POST requests to an SSE (Server-Sent Events) endpoint. The server then establishes a connection to the specified PostgreSQL database and provides various ways to interact with it.
 
+## Architecture
+
+The server follows a modular architecture with clear separation of concerns:
+
+- **Server Core** - Handles MCP protocol implementation and coordination
+- **Resources** - Provide data and metadata about database entities
+- **Tools** - Implement database operations and actions
+- **Prompts** - Define natural language interface templates
+
+The code is organized into these main directories:
+
+```
+src/
+├── resources/   # Database schema, table structure, query history resources
+├── tools/       # Database operations (queries, connections, table management)
+├── prompts/     # Natural language templates for database operations
+├── server.ts    # Main MCP server implementation and configuration
+├── database.ts  # Database connection and query handling
+├── session.ts   # Session management with memory/Redis implementations
+└── query-history.ts # Query history tracking and storage
+```
+
 ## Features
 
 - **Database Connections**
@@ -48,6 +70,9 @@ cd db-mcp-server
 # Install dependencies
 npm install
 
+# Install TypeScript type definitions
+npm install --save-dev @types/uuid @types/redis @types/jsonwebtoken
+
 # Create a .env file based on the example
 cp .env.example .env
 # Edit the .env file with your configuration
@@ -58,9 +83,14 @@ cp .env.example .env
 ```bash
 # Start the development server
 npm run dev
+
+# Build the project
+npm run build
 ```
 
 ## Deployment to Vercel
+
+The server is fully compatible with Vercel deployment:
 
 ```bash
 # Install Vercel CLI
@@ -68,6 +98,9 @@ npm install -g vercel
 
 # Deploy to Vercel
 vercel
+
+# Deploy to production
+vercel --prod
 ```
 
 ## Environment Variables
@@ -140,6 +173,12 @@ This MCP server exposes the following capabilities:
    
    URI template: `history://{connectionId}`
 
+4. **postgres-schema**
+
+   Gets schema information for one or all tables.
+   
+   URI template: `postgres://{host}/{table}/schema`
+
 #### Tools
 
 1. **test-connection**
@@ -154,7 +193,7 @@ This MCP server exposes the following capabilities:
    - password: string
    - ssl: boolean (optional)
 
-2. **execute-query**
+2. **query**
 
    Executes a SQL query on a PostgreSQL database.
 
@@ -239,7 +278,7 @@ This MCP server exposes the following capabilities:
 
    Parameters:
    - description: string
-   - tables: string[]
+   - tables: string
    - dbType: string (optional, default: 'postgresql')
 
 2. **analyze-query**
@@ -257,76 +296,24 @@ This MCP server exposes the following capabilities:
    Parameters:
    - schemaJson: string
 
-## Example Client Code
+## Storage Implementations
 
-```javascript
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { HttpClientTransport } from '@modelcontextprotocol/sdk/client/http.js';
+The server provides dual implementation for storage components:
 
-// Create a client
-const transport = new HttpClientTransport({
-  baseUrl: 'https://your-vercel-deployment.vercel.app',
-  headers: {
-    'Authorization': 'Bearer YOUR_JWT_TOKEN'
-  }
-});
+### Session Management
 
-const client = new Client(
-  {
-    name: 'example-client',
-    version: '1.0.0'
-  },
-  {
-    capabilities: {
-      tools: {},
-      resources: {},
-      prompts: {}
-    }
-  }
-);
+- **In-memory storage**: Used in development
+- **Redis storage**: Used in production when REDIS_URL is provided
 
-// Connect to the server
-await client.connect(transport);
+### Query History
 
-// Call a tool
-const result = await client.callTool({
-  name: 'test-connection',
-  arguments: {
-    host: 'localhost',
-    port: 5432,
-    database: 'postgres',
-    user: 'postgres',
-    password: 'password'
-  }
-});
+- **In-memory storage**: Used in development
+- **Redis storage**: Used in production when REDIS_URL is provided
 
-console.log(result);
+## Contributing
 
-// Read a resource
-const schema = await client.readResource('schema://postgres@localhost:5432/postgres');
-console.log(schema);
-
-// Use a prompt
-const queryPrompt = await client.getPrompt('generate-query', {
-  description: 'find all users who registered in the last 30 days',
-  tables: ['users', 'user_profiles']
-});
-
-console.log(queryPrompt);
-```
-
-## Testing with MCP Inspector
-
-You can use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to test your server:
-
-```bash
-# Install the MCP Inspector
-npm install -g @modelcontextprotocol/inspector
-
-# Start the inspector
-mcp-inspector --server-url http://localhost:3000
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT 
+This project is licensed under the MIT License - see the LICENSE file for details. 
