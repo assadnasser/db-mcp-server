@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Define schema for API keys
 export const ApiKeySchema = z.object({
@@ -19,9 +20,13 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
  * Generate a JWT token for authenticated access
  */
 export const generateToken = (apiKey: ApiKey): string => {
-  return jwt.sign({ id: apiKey.id, name: apiKey.name }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN
-  });
+  // Using any to bypass the type checking for jwt
+  const jwtSign = jwt.sign as any;
+  return jwtSign(
+    { id: apiKey.id, name: apiKey.name }, 
+    JWT_SECRET, 
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 };
 
 /**
@@ -29,7 +34,9 @@ export const generateToken = (apiKey: ApiKey): string => {
  */
 export const verifyToken = (token: string): { id: string; name: string } | null => {
   try {
-    return jwt.verify(token, JWT_SECRET) as { id: string; name: string };
+    // Using any to bypass the type checking for jwt
+    const jwtVerify = jwt.verify as any;
+    return jwtVerify(token, JWT_SECRET) as { id: string; name: string };
   } catch (error) {
     return null;
   }
@@ -71,8 +78,12 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
 /**
  * Controller for token generation
+ * Works with both Express and Vercel request/response objects
  */
-export const generateTokenController = (req: Request, res: Response) => {
+export const generateTokenController = (
+  req: Request | VercelRequest, 
+  res: Response | VercelResponse
+) => {
   try {
     const { apiKey } = req.body;
     

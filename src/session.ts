@@ -1,6 +1,7 @@
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { createClient } from 'redis';
 import { v4 as uuidv4 } from 'uuid';
+import { activeTransports } from './server.js';
 
 // Define interface for session data
 export interface SessionData {
@@ -102,6 +103,9 @@ export class RedisSessionStore implements SessionStore {
         }),
         { EX: 3600 } // 1 hour expiration
       );
+      
+      // Store the transport in the activeTransports map
+      activeTransports[sessionId] = transport;
     } catch (error) {
       console.error('Redis save session error:', error);
       throw error;
@@ -125,9 +129,8 @@ export class RedisSessionStore implements SessionStore {
         { EX: 3600 } // 1 hour expiration
       );
       
-      // Note: The actual transport object will be managed by the application code
-      // using the activeTransports map, since we can't serialize the full transport
-      return null;
+      // Return the transport from the activeTransports map
+      return activeTransports[sessionId] || null;
     } catch (error) {
       console.error('Redis get session error:', error);
       return null;
@@ -138,13 +141,36 @@ export class RedisSessionStore implements SessionStore {
     try {
       await this.connect();
       await this.client.del(`${this.prefix}${sessionId}`);
+      
+      // Remove from activeTransports map
+      if (activeTransports[sessionId]) {
+        delete activeTransports[sessionId];
+      }
     } catch (error) {
       console.error('Redis delete session error:', error);
     }
   }
   
   async cleanupSessions(maxAgeMs: number): Promise<void> {
-    // Redis handles expiration automatically, no need to implement cleanup
+    // Redis handles expiration automatically via the EX parameter
+    // But we should still clean up the activeTransports map
+    try {
+      await this.connect();
+      
+      // Get all session keys
+      const keys = await this.client.keys(`${this.prefix}*`);
+      
+      // Clean up any transport objects that don't have corresponding Redis keys
+      const validSessionIds = keys.map(key => key.replace(this.prefix, ''));
+      
+      for (const sessionId in activeTransports) {
+        if (!validSessionIds.includes(sessionId)) {
+          delete activeTransports[sessionId];
+        }
+      }
+    } catch (error) {
+      console.error('Redis cleanup sessions error:', error);
+    }
   }
 }
 
