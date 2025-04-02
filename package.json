@@ -5,9 +5,10 @@
   "main": "dist/src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec 'node --loader ts-node/esm src/index.ts'",
+    "dev": "tsx --watch --env-file .env src/index.ts",
+    "start": "node --env-file .env dist/index.js",
     "build": "tsc",
-    "start": "node dist/src/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector",
     "vercel-build": "echo 'Build step skipped'"
   },
   "keywords": [
@@ -42,7 +43,8 @@
     "@types/uuid": "^9.0.8",
     "@vercel/node": "^3.0.14",
     "nodemon": "^3.0.3",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.3"
   },
   "engines": {
     "node": "18.x"
