@@ -24,7 +24,6 @@ src/
 ├── prompts/     # Natural language templates for database operations
 ├── server.ts    # Main MCP server implementation and configuration
 ├── database.ts  # Database connection and query handling
-├── session.ts   # Session management with memory/Redis implementations
 └── query-history.ts # Query history tracking and storage
 ```
 
@@ -51,12 +50,10 @@ src/
   - Query performance tracking
 
 - **Security**
-  - JWT-based authentication
   - API rate limiting
   - CORS support and secure headers
 
 - **Server Features**
-  - Session management with persistent storage option (Redis)
   - Graceful shutdown handling
   - Cross-origin resource sharing (CORS) support
 
@@ -71,7 +68,7 @@ cd db-mcp-server
 npm install
 
 # Install TypeScript type definitions
-npm install --save-dev @types/uuid @types/redis @types/jsonwebtoken
+npm install --save-dev @types/uuid @types/redis
 
 # Create a .env file based on the example
 cp .env.example .env
@@ -109,45 +106,20 @@ vercel --prod
 |----------|-------------|---------|
 | PORT | Server port | 3000 |
 | NODE_ENV | Environment mode | development |
-| JWT_SECRET | Secret for JWT tokens | your-secret-key-change-in-production |
-| JWT_EXPIRES_IN | JWT token expiration | 7d |
-| AUTH_DISABLED | Disable authentication | false |
-| DEFAULT_API_KEY | Default API key | default-key |
 | REDIS_URL | Redis connection URL | none (uses in-memory storage) |
 | PGHOST | PostgreSQL host | localhost |
 | PGUSER | PostgreSQL user | postgres |
 | PGDATABASE | PostgreSQL database | postgres |
 | PGPASSWORD | PostgreSQL password | password |
 | PGPORT | PostgreSQL port | 5432 |
-| SESSION_CLEANUP_INTERVAL_MS | Session cleanup interval | 900000 (15 minutes) |
-| SESSION_MAX_AGE_MS | Session maximum age | 3600000 (1 hour) |
 
 ## API Endpoints
 
 - `GET /health`: Health check endpoint
 - `GET /sse`: SSE endpoint for MCP communication
-- `POST /messages?sessionId=<sessionId>`: Message endpoint for client-to-server communication
-- `POST /api/auth/token`: Endpoint to generate authentication tokens
+- `POST /messages`: Message endpoint for client-to-server communication
 
 ## Using the MCP Server
-
-### Authentication
-
-To authenticate with the server, request a token:
-
-```bash
-curl -X POST http://localhost:3000/api/auth/token \
-  -H "Content-Type: application/json" \
-  -d '{"apiKey": "default-key"}'
-```
-
-This will return a JWT token that you can use in subsequent requests:
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
 
 ### MCP Capabilities
 
@@ -299,11 +271,6 @@ This MCP server exposes the following capabilities:
 ## Storage Implementations
 
 The server provides dual implementation for storage components:
-
-### Session Management
-
-- **In-memory storage**: Used in development
-- **Redis storage**: Used in production when REDIS_URL is provided
 
 ### Query History
 

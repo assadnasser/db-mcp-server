@@ -1,5 +1,4 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { z } from 'zod';
 import { DbConfigSchema, DbConfig } from './database.js';
 import { queryHistoryStore, getConnectionId } from './query-history.js';
@@ -26,11 +25,6 @@ import {
   explainSchemaSchema, explainSchemaPrompt
 } from './prompts/index.js';
 
-// Define session store type
-export interface TransportStore {
-  [sessionId: string]: SSEServerTransport;
-}
-
 // Helper function to adapt tool functions to the McpServer tool interface
 function adaptToolFunction(toolFn: Function) {
   return async (args: any, extra: any) => {
@@ -50,6 +44,13 @@ export const createMcpServer = () => {
   const server = new McpServer({
     name: 'PostgreSQL MCP Server',
     version: '1.0.0'
+  }, {
+    capabilities: {
+      logging: {},
+      prompts: {},
+      resources: { subscribe: true },
+      tools: {},
+    },
   });
 
   // ======== RESOURCES ========
@@ -256,7 +257,4 @@ export const createMcpServer = () => {
   );
 
   return server;
-};
-
-// Map to store active connections
-export const activeTransports: TransportStore = {}; 
+}; 
